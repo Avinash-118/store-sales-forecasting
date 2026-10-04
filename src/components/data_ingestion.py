@@ -34,7 +34,7 @@ class DataIngestion:
 
             MONGODB_USERNAME = os.getenv("MONGODB_USERNAME")
             MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD")
-            mongodb_uri = f"mongodb+srv://{MONGODB_USERNAME}:{MONGODB_PASSWORD}@storesales.ba5omuw.mongodb.net/?retryWrites=true&w=majority"
+            mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
             client = MongoClient(mongodb_uri)
 
             data = pd.DataFrame(client["StoreSales"]["Dataset"].find())

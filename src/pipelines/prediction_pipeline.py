@@ -1,3 +1,4 @@
+import torch
 from src.utils import generate_covariates
 from src.utils.exception import CustomException
 import joblib
@@ -64,4 +65,5 @@ class PredictionPipeline:
 
             return [round(x, 2) for x in predictions.pd_series().to_list()]
         except Exception as e:
-            print(CustomException(e))
+                print(CustomException(e))
+                raise

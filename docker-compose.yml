@@ -1,0 +1,32 @@
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: retail-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  api:
+    build: .
+    container_name: retail-api
+    command: uvicorn app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+
+  dashboard:
+    build: .
+    container_name: retail-dashboard
+    command: streamlit run dashboard.py --server.address=0.0.0.0 --server.port=8501
+    ports:
+      - "8501:8501"
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017
+    depends_on:
+      - mongodb
+      - api
+
+volumes:
+  mongo_data:

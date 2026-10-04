@@ -1,6 +1,7 @@
 from src.utils.exception import CustomException
 from src.utils.logger import logging
 from dataclasses import dataclass
+import torch
 from darts.models.forecasting.lgbm import LightGBMModel
 import joblib
 import os
@@ -34,7 +35,9 @@ class ModelTrainer:
                 lags = 25,
                 output_chunk_length = 1,
                 n_estimators = 500,
-                verbosity = 0
+                verbosity = 0,
+                num_threads = 4
+                
             )
             oil_model.fit(series = series)
 
@@ -45,7 +48,8 @@ class ModelTrainer:
                 lags_past_covariates = [-1, -2, -6, -7, -8, -13, -14, -15, -20, -21, -27, -28, -35],
                 output_chunk_length = 1,
                 n_estimators = 1000,
-                verbosity = 0
+                verbosity = 0,
+                num_threads = 4
             )
 
             logging.info("fitting the LightGBM Model for forecasting sales")

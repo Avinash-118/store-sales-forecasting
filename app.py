@@ -15,7 +15,7 @@ class Covariate_params(BaseModel):
     is_holiday: List[int]
 
 # creating API method
-@app.get("/")
+@app.post("/")
 async def get_forecasts(params: Covariate_params):
     """
     This endpoint fetches the input data provided by the user and returns the generated forecasts by the model.
