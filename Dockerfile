@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir \
     fastapi \
     "uvicorn[standard]" \
     streamlit \
+    pyarrow==17.0.0 \
     pymongo \
     psycopg2-binary \
     azure-identity \
