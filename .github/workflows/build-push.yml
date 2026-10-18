@@ -10,5 +10,5 @@ jobs:
           registry: avinashstoresalesacr.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
-      - run: docker build -t avinashstoresalesacr.azurecr.io/store-sales-forecasting-api:v2 .
-      - run: docker push avinashstoresalesacr.azurecr.io/store-sales-forecasting-api:v2
+      - run: docker build -t avinashstoresalesacr.azurecr.io/store-sales-forecasting-api:v3 .
+      - run: docker push avinashstoresalesacr.azurecr.io/store-sales-forecasting-api:v3
