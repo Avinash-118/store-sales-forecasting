@@ -17,6 +17,10 @@ RUN pip install --no-cache-dir \
     "uvicorn[standard]" \
     streamlit \
     pymongo \
+    psycopg2-binary \
+    azure-identity \
+    azure-keyvault-secrets \
+    azure-storage-blob \
     torch \
     pytorch-lightning \
     "darts==0.27.1" \
