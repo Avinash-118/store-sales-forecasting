@@ -2,7 +2,7 @@ FROM python:3.11.5-slim
 
 WORKDIR /app
 
-COPY . /app
+
 
 RUN apt-get update && apt-get install -y \
     curl \
@@ -16,13 +16,19 @@ RUN pip install --no-cache-dir \
     fastapi \
     "uvicorn[standard]" \
     streamlit \
+    pyarrow==17.0.0 \
     pymongo \
+    psycopg2-binary \
+    azure-identity \
+    azure-keyvault-secrets \
+    azure-storage-blob \
     torch \
     pytorch-lightning \
     "darts==0.27.1" \
     lightgbm \
     joblib==1.3.2
 
+COPY . /app
 EXPOSE 8000 8501
 
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

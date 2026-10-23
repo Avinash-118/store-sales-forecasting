@@ -2,8 +2,8 @@ import os
 import requests
 import pandas as pd
 import streamlit as st
-from pymongo import MongoClient
-from datetime import datetime
+
+import state
 
 
 # ============================================================
@@ -18,22 +18,26 @@ st.set_page_config(
 
 
 # ============================================================
-# MONGODB CONNECTION
+# EXTERNAL STATE (PostgreSQL + Key Vault + Blob Storage)
 # ============================================================
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://mongodb:27017")
+API_URL = os.getenv("API_URL", "http://api:8000/")
+
+
+@st.cache_resource
+def init_database():
+    """Apply SQL migrations once per container start."""
+    state.run_migrations()
+    return True
+
 
 try:
-    client = MongoClient(
-        MONGODB_URI,
-        serverSelectionTimeoutMS=3000
-    )
-
-    db = client["store_sales"]
-    collection = db["forecast_history"]
-
-except Exception:
-    collection = None
+    init_database()
+    db_ready = True
+    db_startup_error = ""
+except Exception as startup_error:
+    db_ready = False
+    db_startup_error = str(startup_error)
 
 
 # ============================================================
@@ -205,9 +209,9 @@ if st.button(
 
         try:
 
-            # Inside Docker Compose, the API service is named "api".
+            # API_URL comes from an environment variable (see top of file).
             response = requests.post(
-                "http://api:8000/",
+                API_URL,
                 json=payload,
                 timeout=120
             )
@@ -356,36 +360,38 @@ if st.button(
                 )
 
             # ==================================================
-            # SAVE FORECAST TO MONGODB
+            # SAVE FORECAST TO POSTGRESQL
             # ==================================================
 
             try:
 
-                if collection is not None:
+                if db_ready:
 
-                    forecast_record = {
-                        "timestamp": datetime.utcnow(),
-                        "store_nbr": int(store_nbr),
-                        "family": family,
-                        "horizon": int(horizon),
-                        "onpromotion": onpromotion,
-                        "is_holiday": is_holiday,
-                        "predictions": predictions
-                    }
-
-                    collection.insert_one(
-                        forecast_record
+                    state.save_forecast(
+                        store_nbr=store_nbr,
+                        family=family,
+                        horizon=horizon,
+                        onpromotion=onpromotion,
+                        is_holiday=is_holiday,
+                        predictions=predictions
                     )
 
                     st.caption(
-                        "Forecast saved to MongoDB."
+                        "Forecast saved to PostgreSQL."
                     )
 
-            except Exception as mongo_error:
+                else:
+
+                    st.warning(
+                        "Forecast worked, but the database is "
+                        f"unavailable: {db_startup_error}"
+                    )
+
+            except Exception as db_error:
 
                 st.warning(
-                    "Forecast worked, but MongoDB history "
-                    f"could not be saved: {mongo_error}"
+                    "Forecast worked, but history "
+                    f"could not be saved: {db_error}"
                 )
 
         except requests.exceptions.RequestException as api_error:
@@ -406,6 +412,36 @@ if st.button(
 
 
 # ============================================================
+# FILE UPLOAD (Azure Blob Storage via managed identity)
+# ============================================================
+
+st.divider()
+
+st.header("📁 Upload a File")
+
+st.caption(
+    "Files are stored in Azure Blob Storage, not on the container's disk."
+)
+
+uploaded = st.file_uploader("Choose a file to upload")
+
+if uploaded is not None and st.button("Upload to storage"):
+
+    try:
+
+        blob_name = state.upload_file(
+            uploaded.name,
+            uploaded.getvalue()
+        )
+
+        st.success(f"Uploaded to Blob Storage as: {blob_name}")
+
+    except Exception as upload_error:
+
+        st.error(f"Upload failed: {upload_error}")
+
+
+# ============================================================
 # FORECAST HISTORY
 # ============================================================
 
@@ -415,16 +451,13 @@ st.header("🗄️ Forecast History")
 
 try:
 
-    if collection is not None:
+    if db_ready:
 
-        records = list(
-            collection.find(
-                {},
-                {"_id": 0}
-            )
-            .sort("timestamp", -1)
-            .limit(20)
-        )
+        row_count = state.count_rows("forecast_history")
+
+        st.metric("Rows in forecast_history", row_count)
+
+        records = state.load_history(20)
 
         if records:
 
@@ -444,11 +477,11 @@ try:
     else:
 
         st.info(
-            "MongoDB history is currently unavailable."
+            "Database history is currently unavailable."
         )
 
 except Exception as history_error:
 
     st.warning(
-        f"Could not load MongoDB history: {history_error}"
+        f"Could not load history: {history_error}"
     )

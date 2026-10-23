@@ -1,0 +1,12 @@
+# Non-secret settings read by state.py. Secrets stay in Key Vault.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: store-config
+  namespace: storesales-m5
+data:
+  KEY_VAULT_URL: "https://kv-storesales-667.vault.azure.net/"
+  STORAGE_ACCOUNT: "storesales28606"
+  BLOB_CONTAINER: "uploads"
+  PG_DATABASE: "postgres"
+  API_URL: "http://api:8000/"

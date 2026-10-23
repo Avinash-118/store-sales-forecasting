@@ -1,0 +1,5 @@
+NAME                         READY   STATUS    RESTARTS   AGE     IP          NODE                                NOMINATED NODE   READINESS GATES
+api-56579876d5-j2vwj         1/1     Running   0          8m27s   10.2.8.40   aks-nodepool1-37681236-vmss000001   <none>           <none>
+api-56579876d5-pf5ll         1/1     Running   0          16s     10.2.8.31   aks-nodepool1-37681236-vmss000000   <none>           <none>
+dashboard-69bb46b7dd-72wm5   1/1     Running   0          8m20s   10.2.8.22   aks-nodepool1-37681236-vmss000000   <none>           <none>
+dashboard-69bb46b7dd-blqpz   1/1     Running   0          8m26s   10.2.8.38   aks-nodepool1-37681236-vmss000001   <none>           <none>

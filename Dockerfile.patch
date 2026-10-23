@@ -1,0 +1,2 @@
+FROM avinashstoresalesacr.azurecr.io/store-sales-forecasting-api:v4
+COPY app.py /app/app.py
