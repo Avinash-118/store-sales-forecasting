@@ -1,0 +1,34 @@
+# Public entry point: the cluster's ingress-nginx LoadBalancer (20.80.114.231)
+# -> this Ingress -> dashboard Service -> dashboard pods. The API has NO ingress (internal only).
+# Apply this file only after storesales-api-ingress (storesales namespace) has been removed,
+# because two Ingresses cannot share one hostname.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: storesales-m5
+  namespace: storesales-m5
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"     # http -> https (308)
+    # Streamlit keeps a websocket per browser session; keep each user on one pod.
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "storesales-affinity"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [storesales-dadb2908.centralus.cloudapp.azure.com]
+      secretName: storesales-m5-tls
+  rules:
+    - host: storesales-dadb2908.centralus.cloudapp.azure.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dashboard
+                port: { number: 8501 }

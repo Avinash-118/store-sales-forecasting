@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: storesales-m5
+  labels: { app: api }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: api }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  template:
+    metadata:
+      labels:
+        app: api
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: store-app
+      terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: api }
+      containers:
+        - name: api
+          image: avinashstoresalesacr.azurecr.io/store-sales-forecasting-api:v6
+          command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef: { name: store-config }
+          resources:
+            requests: { cpu: "250m", memory: "768Mi" }
+            limits:   { cpu: "1",    memory: "2Gi" }
+          # Startup: give the heavy imports (darts/torch) time before liveness starts.
+          startupProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            periodSeconds: 5
+            failureThreshold: 36        # up to 3 minutes
+          # Liveness: process only. Failing it RESTARTS the pod.
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Readiness: model files + Postgres. Failing it only REMOVES the pod from the Service.
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8000 }
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec: { command: ["sleep", "10"] }   # let the load balancer drain before shutdown
